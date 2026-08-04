@@ -137,7 +137,6 @@
         .close-modal-btn { background: rgba(255,255,255,0.2); color: white; border:none; width: 28px; height: 28px; border-radius: 50%; font-weight:800; cursor:pointer; }
         .game-canvas-area { padding: 12px; display:flex; flex-direction:column; align-items:center; }
         
-        /* 4-TRY REACTION INTERFACE & GRID */
         .try-dots-container { display: flex; gap: 8px; margin-bottom: 10px; }
         .try-dot { width: 14px; height: 14px; border-radius: 50%; background-color: #475569; border: 2px solid #94A3B8; }
         .try-dot.completed { background-color: var(--athletic-gold); border-color: #FFF; }
@@ -156,8 +155,9 @@
 
         /* DAY 3 SPATIAL GRID */
         .grid-reaction-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; height: 180px; margin-bottom: 10px; }
-        .grid-target-cell { background: #334155; border-radius: 8px; border: 2px solid #64748B; cursor: pointer; transition: background 0.1s; }
+        .grid-target-cell { background: #334155; border-radius: 8px; border: 2px solid #64748B; cursor: pointer; transition: background 0.1s; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
         .grid-target-cell.active-target { background: #16A34A !important; border-color: var(--athletic-gold) !important; box-shadow: 0 0 12px #4ADE80; }
+        .grid-target-cell.wrong-target { background: #DC2626 !important; }
 
         .game-over-overlay { display:none; position:absolute; top:0; left:0; width:100%; height:100%; background: rgba(11,70,25,0.95); flex-direction:column; justify-content:center; align-items:center; padding:20px; z-index:10; }
         .game-over-overlay.active { display:flex; }
@@ -182,7 +182,7 @@
     </header>
 
     <main>
-        <!-- COACH DASHBOARD WITH WEEKLY TRENDS -->
+        <!-- COACH DASHBOARD -->
         <div class="coach-view" id="coachDashboard">
             <h2>⚡ Live Roster & Week-by-Week Improvement Metrics</h2>
             <p style="font-size: 0.85rem; color: #64748B; margin-top: 4px;">Tracks drill sets, reaction games, and player speed progression across all 12 preseason weeks.</p>
@@ -220,23 +220,23 @@
                     <div class="try-dot" id="dotTry4"></div>
                 </div>
 
-                <!-- STANDARD / CHOICE REACTION CANVAS -->
-                <div id="reactionArea" onclick="handleReactionTap()" ontouchstart="handleReactionTap(event)">
+                <!-- STANDARD / CHOICE REACTION CANVAS (DAY 1 & DAY 2) -->
+                <div id="reactionArea" onclick="handleReactionTap(event)">
                     <div id="reactionText">WAIT FOR GREEN...</div>
                     <div id="reactionSubtext">Tap as fast as possible when screen turns green!</div>
                 </div>
 
                 <!-- DAY 3 SPATIAL GRID CANVAS -->
                 <div class="grid-reaction-container" id="reactionGridArea" style="display: none;">
-                    <div class="grid-target-cell" onclick="handleGridTap(0)" ontouchstart="handleGridTap(0)"></div>
-                    <div class="grid-target-cell" onclick="handleGridTap(1)" ontouchstart="handleGridTap(1)"></div>
-                    <div class="grid-target-cell" onclick="handleGridTap(2)" ontouchstart="handleGridTap(2)"></div>
-                    <div class="grid-target-cell" onclick="handleGridTap(3)" ontouchstart="handleGridTap(3)"></div>
-                    <div class="grid-target-cell" onclick="handleGridTap(4)" ontouchstart="handleGridTap(4)"></div>
-                    <div class="grid-target-cell" onclick="handleGridTap(5)" ontouchstart="handleGridTap(5)"></div>
-                    <div class="grid-target-cell" onclick="handleGridTap(6)" ontouchstart="handleGridTap(6)"></div>
-                    <div class="grid-target-cell" onclick="handleGridTap(7)" ontouchstart="handleGridTap(7)"></div>
-                    <div class="grid-target-cell" onclick="handleGridTap(8)" ontouchstart="handleGridTap(8)"></div>
+                    <div class="grid-target-cell" onclick="handleGridTap(0, event)"></div>
+                    <div class="grid-target-cell" onclick="handleGridTap(1, event)"></div>
+                    <div class="grid-target-cell" onclick="handleGridTap(2, event)"></div>
+                    <div class="grid-target-cell" onclick="handleGridTap(3, event)"></div>
+                    <div class="grid-target-cell" onclick="handleGridTap(4, event)"></div>
+                    <div class="grid-target-cell" onclick="handleGridTap(5, event)"></div>
+                    <div class="grid-target-cell" onclick="handleGridTap(6, event)"></div>
+                    <div class="grid-target-cell" onclick="handleGridTap(7, event)"></div>
+                    <div class="grid-target-cell" onclick="handleGridTap(8, event)"></div>
                 </div>
 
                 <button onclick="skipCurrentModalGame()" style="margin-top: 6px; background: transparent; color: #94A3B8; border: 1px solid #334155; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">
@@ -277,8 +277,7 @@
         let isCoachMode = false;
         let activeGameContext = { week: 1, day: 1 };
 
-        /* 3 DAILY REACTION GAME TYPES & STATES */
-        let currentTryIndex = 0; // 0, 1, 2, 3
+        let currentTryIndex = 0;
         let tryResults = [];
         let reactionState = 'WAITING'; // WAITING, READY_STRIKE, READY_BALL, FINISHED_TRY, TOO_EARLY
         let reactionTimer = null;
@@ -781,7 +780,6 @@
             if (isCoachMode) database.ref('players').once('value', s => renderCoachDashboard(s.val() || {}));
         }
 
-        /* COACH DASHBOARD METRICS CALCULATION & TREND TRACKING */
         function renderCoachDashboard(allData = {}) {
             const container = document.getElementById('rosterGridContainer');
             if (!container) return;
@@ -798,7 +796,6 @@
                 let gamesDone = Object.keys(games).filter(k => games[k] === true).length;
                 const pct = Math.round((checkedDrills / 144) * 100);
 
-                // Compute Week-by-Week Average Improvements
                 let weeklyAverages = {};
                 for (let w = 1; w <= 12; w++) {
                     let weekSums = 0;
@@ -852,7 +849,6 @@
             });
         }
 
-        /* 3 DAILY REACTION GAME LOGIC */
         function updateTryDotsUI() {
             [1, 2, 3, 4].forEach((tryNum, index) => {
                 const dot = document.getElementById(`dotTry${tryNum}`);
@@ -885,7 +881,7 @@
 
             if (reactionTimer) clearTimeout(reactionTimer);
 
-            const randomDelay = Math.floor(Math.random() * 2500) + 1500; // 1.5s - 4.0s
+            const randomDelay = Math.floor(Math.random() * 2500) + 1500;
 
             reactionTimer = setTimeout(() => {
                 if (dayNum === 1) {
@@ -905,10 +901,9 @@
                         area.className = 'ball-pitch';
                         txt.innerText = 'BALL! DON\'T TAP! 🛑';
                         subtxt.innerText = 'HOLD YOUR SWING!';
-                        // Auto succeed if player holds swing for 1.2s
                         reactionTimer = setTimeout(() => {
                             if (reactionState === 'READY_BALL') {
-                                tryResults.push(220); // Good restraint bonus
+                                tryResults.push(220);
                                 reactionState = 'FINISHED_TRY';
                                 currentTryIndex++;
                                 updateTryDotsUI();
@@ -927,8 +922,8 @@
         }
 
         function handleReactionTap(e) {
-            if (e) e.preventDefault();
-            if (activeGameContext.day === 3) return; // Handled by grid
+            if (e) e.stopPropagation();
+            if (activeGameContext.day === 3) return;
 
             const area = document.getElementById('reactionArea');
             const txt = document.getElementById('reactionText');
@@ -960,7 +955,6 @@
                     finishAllTries();
                 }
             } else if (reactionState === 'READY_BALL') {
-                // Tapped on a ball pitch -> Penalty!
                 if (reactionTimer) clearTimeout(reactionTimer);
                 const penaltyMs = 450;
                 tryResults.push(penaltyMs);
@@ -983,22 +977,43 @@
             }
         }
 
-        function handleGridTap(index) {
+        /* FIXED DAY 3 GRID TAP HANDLER WITH EVENT STOPPROPAGATION & CELL FEEDBACK */
+        function handleGridTap(index, e) {
+            if (e) e.stopPropagation();
+
+            const gridArea = document.getElementById('reactionGridArea');
+
             if (reactionState === 'WAITING') {
                 if (reactionTimer) clearTimeout(reactionTimer);
                 reactionState = 'TOO_EARLY';
-                alert("Too early! Wait for target to turn green.");
+                if (gridArea && gridArea.children[index]) {
+                    gridArea.children[index].classList.add('wrong-target');
+                }
+                setTimeout(() => {
+                    startSingleReactionTry();
+                }, 400);
+            } else if (reactionState === 'READY_STRIKE') {
+                if (index === targetGridIndex) {
+                    const reactionMs = Date.now() - startTime;
+                    tryResults.push(reactionMs);
+                    reactionState = 'FINISHED_TRY';
+
+                    currentTryIndex++;
+                    updateTryDotsUI();
+
+                    if (currentTryIndex < 4) {
+                        startSingleReactionTry();
+                    } else {
+                        finishAllTries();
+                    }
+                } else {
+                    // Tapped wrong cell on grid
+                    if (gridArea && gridArea.children[index]) {
+                        gridArea.children[index].classList.add('wrong-target');
+                    }
+                }
+            } else if (reactionState === 'TOO_EARLY') {
                 startSingleReactionTry();
-            } else if (reactionState === 'READY_STRIKE' && index === targetGridIndex) {
-                const reactionMs = Date.now() - startTime;
-                tryResults.push(reactionMs);
-                reactionState = 'FINISHED_TRY';
-
-                currentTryIndex++;
-                updateTryDotsUI();
-
-                if (currentTryIndex < 4) startSingleReactionTry();
-                else finishAllTries();
             }
         }
 
@@ -1009,7 +1024,6 @@
 
             const { week, day } = activeGameContext;
 
-            // Save instance reaction stats to Firebase
             database.ref(`players/${currentPlayer}/reactions/w${week}_d${day}`).set({
                 tries: tryResults,
                 avgMs: avgMs,
@@ -1018,7 +1032,6 @@
                 timestamp: Date.now()
             });
 
-            // Update overall player best reaction time in Firebase
             database.ref(`players/${currentPlayer}/bestOverallReactionMs`).transaction(currentBest => {
                 if (!currentBest || bestSingle < currentBest) {
                     return bestSingle;
@@ -1028,7 +1041,7 @@
 
             document.getElementById('summaryScoreText').innerHTML = `
                 Try 1: <strong>${tryResults[0] || '--'} ms</strong> | Try 2: <strong>${tryResults[1] || '--'} ms</strong><br>
-                Try 3: <strong>${tryResults[3] ? tryResults[2] : '--'} ms</strong> | Try 4: <strong>${tryResults[3] || '--'} ms</strong><br><br>
+                Try 3: <strong>${tryResults[2] || '--'} ms</strong> | Try 4: <strong>${tryResults[3] || '--'} ms</strong><br><br>
                 ⚡ <strong>4-Try Average: ${avgMs} ms</strong><br>
                 🏆 <strong>Best Attempt: ${bestSingle} ms</strong>
             `;
