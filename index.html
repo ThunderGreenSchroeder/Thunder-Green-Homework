@@ -48,6 +48,10 @@
         .week-tab-btn { background-color: var(--pure-white); border: 2px solid var(--card-border); color: var(--soft-black); padding: 8px 12px; font-weight: 700; font-size: 0.85rem; border-radius: 8px; cursor: pointer; white-space: nowrap; }
         .week-tab-btn.active { background-color: var(--forest-green); color: var(--pure-white); border-color: var(--forest-green); }
 
+        /* CRITICAL TAB ISOLATION CSS */
+        .week-panel { display: none; }
+        .week-panel.active { display: block !important; }
+
         .week-description { background-color: var(--pure-white); border-left: 4px solid var(--athletic-gold); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: 0.85rem; }
         .day-card { background-color: var(--pure-white); border-radius: 12px; border: 1px solid var(--card-border); box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; overflow: hidden; }
         .day-header { background-color: var(--pitch-black); color: var(--pure-white); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--athletic-gold); }
@@ -153,7 +157,6 @@
                     <div class="game-score-board" id="gameScoreBoard" style="color: var(--athletic-gold);">Score: 0</div>
                 </div>
                 <canvas id="gameCanvas" width="320" height="200"></canvas>
-                <div style="font-size:0.75rem; color:#94A3B8; margin-top:8px;" id="gameInstructions">Tap or click to play!</div>
             </div>
 
             <div class="game-over-overlay" id="gameOverOverlay">
@@ -183,48 +186,42 @@
         let currentPlayer = TEAM_ROSTER[0];
         let currentWeek = 1;
         let isCoachMode = false;
-        let currentGameLoop = null, gameTimerInterval = null, timeLeft = 30;
+        let gameTimerInterval = null, timeLeft = 30;
         let activeGameContext = { week: 1, day: 1 };
 
-        // COMPLETE 12-WEEK PROGRAM DEFINITION WITH ARCADE GAMES & ISOLATION DRILLS
-        const FULL_12_WEEK_PROGRAM = {
-            1: { phaseTitle: "Phase 1: Mechanical Precision & Soft Hands", focus: "Baseline barrel path, tee discipline, and barehand short-hop reactions.",
-                day1: { game: "Reaction", gameTitle: "⚡ Strike Zone Reaction Warmup", drills: [
-                    { cat: "isolation", name: "Top-Hand Lead Arm Isolation", details: "2 sets × 8 reps (Choke up on bat; isolate top-hand drive)" },
-                    { cat: "hitting", name: "Dry Swings / Mirror Work", details: "3 sets × 6 reps (Pause at contact; check stance & load)" },
-                    { cat: "hitting", name: "Inside / Outside Tee Work", details: "14 swings (7 inside pull, 7 outside oppo)" },
-                    { cat: "fielding", name: "Barehand Short Hops (Wall-Ball)", details: "20 reps (Push smooth soft hands up through impact)" },
-                    { cat: "fielding", name: "Glove-On Short Hop Progression", details: "18 reps (Center, forehand, backhand short hops)" }
-                ]},
-                day2: { game: "Fielding", gameTitle: "Gloves-On Grounder Warmup", drills: [
-                    { cat: "isolation", name: "Wrist Angle & Palm Position Holds", details: "12 reps (Hold fielding posture; check flat glove fingers)" },
-                    { cat: "hitting", name: "Front / Side Soft Toss", details: "18 swings (Line drives up the middle; stay on plane)" },
-                    { cat: "fielding", name: "Triangle Footwork Drill", details: "12 reps (Right foot, left foot, fielding funnel)" }
-                ]},
-                day3: { game: "Timing", gameTitle: "Home Run Derby Timing Warmup", drills: [
-                    { cat: "isolation", name: "Bottom-Hand Pull Isolation", details: "2 sets × 8 reps (Knob-to-ball barrel path isolate)" },
-                    { cat: "hitting", name: "Deep Contact Tee Drill", details: "15 swings (Tee deep over plate; drive to oppo field)" },
-                    { cat: "fielding", name: "Stationary Forehand & Backhand Tosses", details: "16 reps (8 left, 8 right; keep glove fingers down)" }
-                ]}
-            },
-            2: { phaseTitle: "Phase 1: Mechanical Precision & Soft Hands", focus: "Extending barrel through contact zone and active charge on slow grounders.",
-                day1: { game: "Reaction", gameTitle: "⚡ Strike Zone Reaction Warmup", drills: [
-                    { cat: "isolation", name: "Hip-Snap Isolation (Stick behind back)", details: "3 sets × 10 reps (Explosive rear hip turn)" },
-                    { cat: "hitting", name: "Walk-Through Tee Swings", details: "3 sets × 6 reps (Rhythm walk into stride)" },
-                    { cat: "fielding", name: "Rapid-Fire Wall-Ball Hops", details: "24 reps (Increase wall distance by 2 feet)" }
-                ]},
-                day2: { game: "Fielding", gameTitle: "Gloves-On Grounder Warmup", drills: [
-                    { cat: "isolation", name: "Single-Leg Balance Fielding Freeze", details: "12 reps (Field short hop balanced on lead leg)" },
-                    { cat: "hitting", name: "Angled Front Toss (Pull & Oppo)", details: "18 swings (Read toss angle; hit where pitched)" },
-                    { cat: "fielding", name: "Charge & Breakdown Footwork", details: "12 reps (Sprint forward, breakdown into low triangle)" }
-                ]},
-                day3: { game: "Timing", gameTitle: "Home Run Derby Timing Warmup", drills: [
-                    { cat: "isolation", name: "Glove Transfer Isolation", details: "20 reps (Funnel ball from glove to throwing grip <0.8s)" },
-                    { cat: "hitting", name: "Offset Tee (Inside/Deep)", details: "16 swings (Randomized tee placement)" },
-                    { cat: "fielding", name: "Pop-Up Drop Step Progression", details: "10 reps (Drop step 45-degrees right & left)" }
-                ]}
-            }
-            // Additional weeks expand dynamically using structural schema
+        const PHASE_TITLES = {
+            1: "Phase 1: Mechanical Precision & Soft Hands",
+            2: "Phase 1: Mechanical Precision & Soft Hands",
+            3: "Phase 1: Mechanical Precision & Soft Hands",
+            4: "Phase 1: Mechanical Precision & Soft Hands",
+            5: "Phase 2: Dynamic Footwork & Barrel Control",
+            6: "Phase 2: Dynamic Footwork & Barrel Control",
+            7: "Phase 2: Dynamic Footwork & Barrel Control",
+            8: "Phase 2: Dynamic Footwork & Barrel Control",
+            9: "Phase 3: High-Velocity Reaction & Game Readiness",
+            10: "Phase 3: High-Velocity Reaction & Game Readiness",
+            11: "Phase 3: High-Velocity Reaction & Game Readiness",
+            12: "Phase 3: High-Velocity Reaction & Game Readiness"
+        };
+
+        const BASE_DRILL_TEMPLATE = {
+            day1: { game: "Reaction", gameTitle: "⚡ Strike Zone Reaction Warmup", drills: [
+                { cat: "isolation", name: "Top-Hand Lead Arm Isolation", details: "2 sets × 8 reps (Choke up on bat; isolate top-hand drive)" },
+                { cat: "hitting", name: "Dry Swings / Mirror Work", details: "3 sets × 6 reps (Pause at contact; check stance & load)" },
+                { cat: "hitting", name: "Inside / Outside Tee Work", details: "14 swings (7 inside pull, 7 outside oppo)" },
+                { cat: "fielding", name: "Barehand Short Hops (Wall-Ball)", details: "20 reps (Push smooth soft hands up through impact)" },
+                { cat: "fielding", name: "Glove-On Short Hop Progression", details: "18 reps (Center, forehand, backhand short hops)" }
+            ]},
+            day2: { game: "Fielding", gameTitle: "🧤 Gloves-On Grounder Warmup", drills: [
+                { cat: "isolation", name: "Wrist Angle & Palm Position Holds", details: "12 reps (Hold fielding posture; check flat glove fingers)" },
+                { cat: "hitting", name: "Front / Side Soft Toss", details: "18 swings (Line drives up the middle; stay on plane)" },
+                { cat: "fielding", name: "Triangle Footwork Drill", details: "12 reps (Right foot, left foot, fielding funnel)" }
+            ]},
+            day3: { game: "Timing", gameTitle: "⚾ Home Run Derby Timing Warmup", drills: [
+                { cat: "isolation", name: "Bottom-Hand Pull Isolation", details: "2 sets × 8 reps (Knob-to-ball barrel path isolate)" },
+                { cat: "hitting", name: "Deep Contact Tee Drill", details: "15 swings (Tee deep over plate; drive to oppo field)" },
+                { cat: "fielding", name: "Stationary Forehand & Backhand Tosses", details: "16 reps (8 left, 8 right; keep glove fingers down)" }
+            ]}
         };
 
         function initApp() {
@@ -256,21 +253,39 @@
             container.innerHTML = '';
             for (let w = 1; w <= 12; w++) {
                 const btn = document.createElement('button');
-                btn.className = `week-tab-btn ${w === currentWeek ? 'active' : ''}`;
+                btn.className = `week-tab-btn ${w === 1 ? 'active' : ''}`;
                 btn.innerText = `W${w}`;
                 btn.onclick = () => switchWeek(w);
                 container.appendChild(btn);
             }
         }
 
+        /* FIXED TAB SWITCHING FUNCTION */
         function switchWeek(weekNum) {
             currentWeek = weekNum;
-            document.querySelectorAll('.week-tab-btn').forEach((btn, idx) => {
-                btn.classList.toggle('active', idx + 1 === weekNum);
+
+            // 1. Update button styling
+            const buttons = document.querySelectorAll('.week-tab-btn');
+            buttons.forEach((btn, idx) => {
+                btn.classList.toggle('active', (idx + 1) === weekNum);
             });
-            document.querySelectorAll('.week-panel').forEach(panel => panel.classList.remove('active'));
+
+            // 2. Hide all week panels and show strictly the selected week panel
+            const panels = document.querySelectorAll('.week-panel');
+            panels.forEach(panel => {
+                panel.classList.remove('active');
+            });
+
             const activePanel = document.getElementById(`week-panel-${weekNum}`);
-            if (activePanel) activePanel.classList.add('active');
+            if (activePanel) {
+                activePanel.classList.add('active');
+            }
+
+            // 3. Update header indicator
+            const phaseLabel = document.getElementById('current-phase-label');
+            if (phaseLabel) {
+                phaseLabel.innerText = PHASE_TITLES[weekNum] || "Phase 1";
+            }
         }
 
         function renderWeekPanels() {
@@ -279,15 +294,14 @@
             container.innerHTML = '';
 
             for (let w = 1; w <= 12; w++) {
-                const weekData = FULL_12_WEEK_PROGRAM[w] || FULL_12_WEEK_PROGRAM[1];
                 const weekPanel = document.createElement('div');
                 weekPanel.id = `week-panel-${w}`;
-                weekPanel.className = `week-panel ${w === currentWeek ? 'active' : ''}`;
+                weekPanel.className = `week-panel ${w === 1 ? 'active' : ''}`;
 
-                let html = `<div class="week-description"><strong>Week ${w} Focus: ${weekData.phaseTitle}</strong><br>${weekData.focus}</div>`;
+                let html = `<div class="week-description"><strong>Week ${w} Focus: ${PHASE_TITLES[w]}</strong></div>`;
 
                 [1, 2, 3].forEach(dayNum => {
-                    const dayObj = (weekData[`day${dayNum}`]) ? weekData[`day${dayNum}`] : FULL_12_WEEK_PROGRAM[1].day1;
+                    const dayObj = BASE_DRILL_TEMPLATE[`day${dayNum}`];
                     
                     html += `
                         <div class="day-card" id="card-w${w}-d${dayNum}">
@@ -348,7 +362,9 @@
 
         function handlePlayerChange() {
             currentPlayer = document.getElementById('playerSelect').value;
-            syncPlayerUIFromCloud();
+            database.ref('players/' + currentPlayer).once('value', snapshot => {
+                syncPlayerUIFromCloud(snapshot.val() || {});
+            });
         }
 
         function toggleDrillCloud(drillId, isChecked) {
@@ -364,13 +380,6 @@
         }
 
         function syncPlayerUIFromCloud(playerData) {
-            if (!playerData) {
-                database.ref('players/' + currentPlayer).once('value', snapshot => {
-                    syncPlayerUIFromCloud(snapshot.val() || {});
-                });
-                return;
-            }
-
             const drills = playerData.drills || {};
             const games = playerData.games || {};
 
@@ -386,15 +395,15 @@
                     if (btn && gameDone) {
                         btn.disabled = true;
                         btn.innerText = '🔒 COMPLETED';
-                        arcadeSec.classList.add('disabled-game');
-                        lockOverlay.style.display = 'none';
-                        workoutContainer.classList.add('unlocked');
+                        if (arcadeSec) arcadeSec.classList.add('disabled-game');
+                        if (lockOverlay) lockOverlay.style.display = 'none';
+                        if (workoutContainer) workoutContainer.classList.add('unlocked');
                     } else if (btn) {
                         btn.disabled = false;
                         btn.innerText = '🎮 PLAY WARMUP (30S)';
-                        arcadeSec.classList.remove('disabled-game');
-                        lockOverlay.style.display = 'block';
-                        workoutContainer.classList.remove('unlocked');
+                        if (arcadeSec) arcadeSec.classList.remove('disabled-game');
+                        if (lockOverlay) lockOverlay.style.display = 'block';
+                        if (workoutContainer) workoutContainer.classList.remove('unlocked');
                     }
 
                     for (let dr = 1; dr <= 5; dr++) {
@@ -430,7 +439,7 @@
 
                 let checkedDrills = Object.keys(drills).filter(k => drills[k] === true).length;
                 let gamesDone = Object.keys(games).filter(k => games[k] === true).length;
-                const pct = Math.round((checkedDrills / 100) * 100);
+                const pct = Math.round((checkedDrills / 144) * 100);
 
                 const card = document.createElement('div');
                 card.className = 'player-card';
@@ -442,7 +451,7 @@
                     <div class="progress-bar-bg">
                         <div class="progress-bar-fill" style="width: ${pct}%;"></div>
                     </div>
-                    <div style="font-size:0.75rem; color:#64748B;">Drills: ${checkedDrills} Completed</div>
+                    <div style="font-size:0.75rem; color:#64748B;">Drills Completed: ${checkedDrills}</div>
                     <div style="font-size:0.75rem; color:#64748B;">Arcade Warmups: ${gamesDone} / 36</div>
                 `;
                 container.appendChild(card);
