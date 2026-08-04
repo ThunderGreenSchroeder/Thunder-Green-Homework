@@ -20,6 +20,7 @@
             --bg-slate: #F8FAFC;
             --card-border: #E2E8F0;
             --completed-green: #DCFCE7;
+            --danger-red: #EF4444;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; touch-action: manipulation; }
@@ -48,7 +49,6 @@
         .week-tab-btn { background-color: var(--pure-white); border: 2px solid var(--card-border); color: var(--soft-black); padding: 8px 12px; font-weight: 700; font-size: 0.85rem; border-radius: 8px; cursor: pointer; white-space: nowrap; }
         .week-tab-btn.active { background-color: var(--forest-green); color: var(--pure-white); border-color: var(--forest-green); }
 
-        /* CRITICAL TAB ISOLATION CSS */
         .week-panel { display: none; }
         .week-panel.active { display: block !important; }
 
@@ -68,14 +68,18 @@
         .play-game-btn { background-color: var(--athletic-gold); color: var(--pitch-black); border: none; padding: 10px 16px; border-radius: 8px; font-weight: 900; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
         .play-game-btn:disabled { background-color: #64748B !important; color: #94A3B8 !important; cursor: not-allowed; }
 
+        .skip-game-btn { background: rgba(255,255,255,0.15); color: #FFF; border: 1px solid rgba(255,255,255,0.4); padding: 10px 12px; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+
         .workout-lock-overlay { padding: 24px; text-align: center; background: #F8FAFC; color: #64748B; font-weight: 700; font-size: 0.9rem; }
         .workout-container { display: none; }
         .workout-container.unlocked { display: block; }
 
         .drill-table { width: 100%; border-collapse: collapse; text-align: left; }
         .drill-table th { background-color: #F1F5F9; color: var(--soft-black); font-size: 0.75rem; text-transform: uppercase; padding: 8px 10px; border-bottom: 1px solid var(--card-border); }
-        .drill-table td { padding: 10px; border-bottom: 1px solid #F1F5F9; font-size: 0.85rem; }
+        .drill-table td { padding: 10px; border-bottom: 1px solid #F1F5F9; font-size: 0.85rem; vertical-align: top; }
         
+        .drill-desc { font-size: 0.78rem; color: #475569; margin-top: 4px; line-height: 1.35; }
+
         .tag { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
         .tag-hitting { background-color: #DBEAFE; color: #1E40AF; }
         .tag-fielding { background-color: #DCFCE7; color: #166534; }
@@ -85,7 +89,38 @@
         .check-cell.highlighted { background-color: var(--completed-green) !important; }
         .custom-checkbox { width: 24px; height: 24px; cursor: pointer; }
 
-        /* COACH DASHBOARD */
+        .reset-controls-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 14px;
+            border-top: 1px solid var(--card-border);
+            flex-wrap: wrap;
+        }
+
+        .reset-btn-weekly {
+            background-color: #F97316;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .reset-btn-full {
+            background-color: var(--danger-red);
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
         .coach-view { display: none; background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--card-border); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         .coach-view.active { display: block; }
         .roster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 16px; }
@@ -93,7 +128,6 @@
         .progress-bar-bg { background-color: #E2E8F0; height: 8px; border-radius: 4px; overflow: hidden; margin: 8px 0; }
         .progress-bar-fill { background: linear-gradient(90deg, var(--athletic-gold), #4ADE80); height: 100%; width: 0%; transition: width 0.4s; }
 
-        /* ARCADE MODAL */
         .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(15,23,42,0.9); backdrop-filter: blur(6px); z-index:1000; justify-content:center; align-items:center; padding:10px; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: var(--pitch-black); border: 3px solid var(--athletic-gold); border-radius: 14px; width:100%; max-width:400px; overflow:hidden; text-align:center; color:white; position:relative; }
@@ -141,6 +175,11 @@
             </div>
 
             <div id="weekPanelsContainer"></div>
+
+            <div class="reset-controls-bar">
+                <button class="reset-btn-weekly" onclick="resetCurrentWeekProgress()">⚠️ Reset Week <span id="resetWeekNumLabel">1</span> Progress</button>
+                <button class="reset-btn-full" onclick="resetFullPlayerProgress()">🚨 Reset Full Player Progress</button>
+            </div>
         </div>
     </main>
 
@@ -157,6 +196,9 @@
                     <div class="game-score-board" id="gameScoreBoard" style="color: var(--athletic-gold);">Score: 0</div>
                 </div>
                 <canvas id="gameCanvas" width="320" height="200"></canvas>
+                <button onclick="skipCurrentModalGame()" style="margin-top: 10px; background: transparent; color: #94A3B8; border: 1px solid #334155; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">
+                    ⏩ Skip Warmup & Unlock Workout
+                </button>
             </div>
 
             <div class="game-over-overlay" id="gameOverOverlay">
@@ -168,7 +210,6 @@
     </div>
 
     <script>
-        // FIREBASE PROJECT CONFIGURATION
         const firebaseConfig = {
             apiKey: "YOUR_API_KEY",
             authDomain: "gretnathunderdailies.firebaseapp.com",
@@ -189,39 +230,248 @@
         let gameTimerInterval = null, timeLeft = 30;
         let activeGameContext = { week: 1, day: 1 };
 
-        const PHASE_TITLES = {
-            1: "Phase 1: Mechanical Precision & Soft Hands",
-            2: "Phase 1: Mechanical Precision & Soft Hands",
-            3: "Phase 1: Mechanical Precision & Soft Hands",
-            4: "Phase 1: Mechanical Precision & Soft Hands",
-            5: "Phase 2: Dynamic Footwork & Barrel Control",
-            6: "Phase 2: Dynamic Footwork & Barrel Control",
-            7: "Phase 2: Dynamic Footwork & Barrel Control",
-            8: "Phase 2: Dynamic Footwork & Barrel Control",
-            9: "Phase 3: High-Velocity Reaction & Game Readiness",
-            10: "Phase 3: High-Velocity Reaction & Game Readiness",
-            11: "Phase 3: High-Velocity Reaction & Game Readiness",
-            12: "Phase 3: High-Velocity Reaction & Game Readiness"
-        };
-
-        const BASE_DRILL_TEMPLATE = {
-            day1: { game: "Reaction", gameTitle: "⚡ Strike Zone Reaction Warmup", drills: [
-                { cat: "isolation", name: "Top-Hand Lead Arm Isolation", details: "2 sets × 8 reps (Choke up on bat; isolate top-hand drive)" },
-                { cat: "hitting", name: "Dry Swings / Mirror Work", details: "3 sets × 6 reps (Pause at contact; check stance & load)" },
-                { cat: "hitting", name: "Inside / Outside Tee Work", details: "14 swings (7 inside pull, 7 outside oppo)" },
-                { cat: "fielding", name: "Barehand Short Hops (Wall-Ball)", details: "20 reps (Push smooth soft hands up through impact)" },
-                { cat: "fielding", name: "Glove-On Short Hop Progression", details: "18 reps (Center, forehand, backhand short hops)" }
-            ]},
-            day2: { game: "Fielding", gameTitle: "🧤 Gloves-On Grounder Warmup", drills: [
-                { cat: "isolation", name: "Wrist Angle & Palm Position Holds", details: "12 reps (Hold fielding posture; check flat glove fingers)" },
-                { cat: "hitting", name: "Front / Side Soft Toss", details: "18 swings (Line drives up the middle; stay on plane)" },
-                { cat: "fielding", name: "Triangle Footwork Drill", details: "12 reps (Right foot, left foot, fielding funnel)" }
-            ]},
-            day3: { game: "Timing", gameTitle: "⚾ Home Run Derby Timing Warmup", drills: [
-                { cat: "isolation", name: "Bottom-Hand Pull Isolation", details: "2 sets × 8 reps (Knob-to-ball barrel path isolate)" },
-                { cat: "hitting", name: "Deep Contact Tee Drill", details: "15 swings (Tee deep over plate; drive to oppo field)" },
-                { cat: "fielding", name: "Stationary Forehand & Backhand Tosses", details: "16 reps (8 left, 8 right; keep glove fingers down)" }
-            ]}
+        const FULL_12_WEEK_PROGRAM = {
+            1: { phaseTitle: "Phase 1: Mechanical Precision & Soft Hands", focus: "Baseline barrel path, tee discipline, and barehand short-hop reactions.",
+                day1: { game: "Reaction", gameTitle: "⚡ Strike Zone Reaction Warmup", drills: [
+                    { cat: "isolation", name: "Top-Hand Lead Arm Isolation", details: "2 sets × 8 reps", desc: "Choke up on bat with top hand only. Isolate top-hand barrel drive into the ball without casting." },
+                    { cat: "hitting", name: "Dry Swings / Mirror Work", details: "3 sets × 6 reps", desc: "Perform controlled dry swings in front of mirror. Pause at contact to verify balanced stance and palm-up position." },
+                    { cat: "hitting", name: "Inside / Outside Tee Work", details: "14 swings total", desc: "7 swings pulling inside pitches, 7 swings letting outside pitches travel deep to drive to opposite field." },
+                    { cat: "fielding", name: "Barehand Short Hops (Wall-Ball)", details: "20 reps", desc: "Bounce tennis ball off wall. Field short hops with bare hands, pushing fingers smooth up through ball." },
+                    { cat: "fielding", name: "Glove-On Short Hop Progression", details: "18 reps", desc: "Put glove on. Field 6 center short hops, 6 forehands, and 6 backhands with soft presented pocket." }
+                ]},
+                day2: { game: "Fielding", gameTitle: "🧤 Ground Ball Glove Catcher Warmup", drills: [
+                    { cat: "isolation", name: "Wrist Angle & Palm Position Holds", details: "12 reps", desc: "Get into fielding stance. Freeze glove open to ball, ensuring flat fingers and palm facing forward." },
+                    { cat: "hitting", name: "Front / Side Soft Toss", details: "18 swings", desc: "Take soft toss aiming for line drives directly up the middle. Focus on keeping barrel on plane." },
+                    { cat: "hitting", name: "High Tee / Low Tee Alternating", details: "12 swings", desc: "Alternate tee height between belt high and knee high. Maintain clean spine angle through both heights." },
+                    { cat: "fielding", name: "Triangle Footwork Drill", details: "12 reps", desc: "Set up feet wider than shoulders. Step right-left into fielding triangle, securing ball out in front." }
+                ]},
+                day3: { game: "Timing", gameTitle: "⚾ Home Run Derby Timing Warmup", drills: [
+                    { cat: "isolation", name: "Bottom-Hand Pull Isolation", details: "2 sets × 8 reps", desc: "Choke up with bottom hand only. Isolate knob-to-ball barrel path while keeping front shoulder closed." },
+                    { cat: "hitting", name: "Deep Contact Tee Drill", details: "15 swings", desc: "Set tee deep behind home plate front edge. Practice letting ball travel before driving to opposite gap." },
+                    { cat: "fielding", name: "Stationary Forehand & Backhand Tosses", details: "16 reps", desc: "Partner or wall tosses 8 grounders to forehand and 8 to backhand. Focus on keeping glove fingers down." },
+                    { cat: "fielding", name: "Pop-Up Callout & Footwork", details: "8 reps", desc: "Toss ball high overhead. Call 'I got it!' loudly, drop step, and secure ball above throwing shoulder." }
+                ]}
+            },
+            2: { phaseTitle: "Phase 1: Mechanical Precision & Soft Hands", focus: "Extending barrel through contact zone and active charge on slow grounders.",
+                day1: { game: "Reaction", gameTitle: "⚡ Strike Zone Reaction Warmup", drills: [
+                    { cat: "isolation", name: "Hip-Snap Isolation (Stick behind back)", details: "3 sets × 10 reps", desc: "Hold dowel or bat behind lower back. Fire rear hip explosively while keeping shoulders square." },
+                    { cat: "hitting", name: "Walk-Through Tee Swings", details: "3 sets × 6 reps", desc: "Start 2 feet behind tee. Walk into stride to create natural rhythm, weight transfer, and barrel whip." },
+                    { cat: "hitting", name: "Extension & Hold Drill", details: "14 swings", desc: "Swing at tee and hold finish freeze for 2 full seconds. Barrel should point directly to pitcher." },
+                    { cat: "fielding", name: "Rapid-Fire Wall-Ball Hops", details: "24 reps", desc: "Move back 2 feet from wall. Throw ball harder and field rapid short hops with active hand absorb." }
+                ]},
+                day2: { game: "Fielding", gameTitle: "🧤 Ground Ball Glove Catcher Warmup", drills: [
+                    { cat: "isolation", name: "Single-Leg Balance Fielding Freeze", details: "12 reps", desc: "Balance on lead leg while fielding short hop. Freeze stance to isolate core stability at fielding point." },
+                    { cat: "hitting", name: "Angled Front Toss (Pull & Oppo)", details: "18 swings", desc: "Toss coming from 45-degree angle. Read flight path and drive ball where it's pitched." },
+                    { cat: "hitting", name: "Pause Toss (Loading Rhythm)", details: "12 swings", desc: "Pause in stride position for 1 second before soft toss is released. Fire hips from static load." },
+                    { cat: "fielding", name: "Charge & Breakdown Footwork", details: "12 reps", desc: "Sprint forward 10 feet toward imaginary slow roller. Breakdown into low, wide fielding triangle." }
+                ]},
+                day3: { game: "Timing", gameTitle: "⚾ Home Run Derby Timing Warmup", drills: [
+                    { cat: "isolation", name: "Glove Transfer Isolation", details: "20 reps", desc: "Practice funneling ball from glove pocket to throwing hand grip in under 0.8 seconds." },
+                    { cat: "hitting", name: "Offset Tee (Inside/Deep)", details: "16 swings", desc: "Randomize tee position inside and outside across reps to test immediate barrel path adjustment." },
+                    { cat: "fielding", name: "Moving Forehand / Backhand Sweeps", details: "16 reps", desc: "Shuffle laterally 3 steps right or left before sweeping ball up cleanly into transfer stance." },
+                    { cat: "fielding", name: "Pop-Up Drop Step Progression", details: "10 reps", desc: "Execute 45-degree drop steps right and left upon ball toss, tracking overhead trajectory." }
+                ]}
+            },
+            3: { phaseTitle: "Phase 1: Mechanical Precision & Soft Hands", focus: "Rotational hip acceleration and quick exchange/transfer execution.",
+                day1: { game: "Reaction", gameTitle: "⚡ Strike Zone Reaction Warmup", drills: [
+                    { cat: "isolation", name: "Heavy-Bat Single Arm Isolation", details: "2 sets × 6 reps", desc: "Use slightly heavier bat to execute top-hand dry cuts. Focus on wrist snap and forearm stability." },
+                    { cat: "hitting", name: "Hip-Turn Connection Drills", details: "3 sets × 8 reps", desc: "Rest bat across shoulders, rotate rear hip forward to clear hands into hitting slot instantly." },
+                    { cat: "hitting", name: "High-Speed Tee Drives", details: "16 swings", desc: "Maximum exit speed focus. Drive through center of ball with aggressive hip torque." },
+                    { cat: "fielding", name: "Bound & Field Short Hop", details: "16 reps", desc: "Perform side bound into grounding stance. Absorb bounce with soft hands funneling to belt." }
+                ]},
+                day2: { game: "Fielding", gameTitle: "🧤 Ground Ball Glove Catcher Warmup", drills: [
+                    { cat: "isolation", name: "Barehand Funnel-to-Chest Holds", details: "15 reps", desc: "Field tennis ball barehanded and bring straight to chest center to lock in proper fielding mechanics." },
+                    { cat: "hitting", name: "Rapid Soft Toss", details: "20 swings", desc: "Fast pace toss drill designed to increase hand speed and rapid barrel reset between swings." },
+                    { cat: "hitting", name: "Two-Toss Option Drill", details: "12 swings", desc: "Pitcher holds two balls and tosses both simultaneously; call 'Top' or 'Bottom' mid-flight." },
+                    { cat: "fielding", name: "Backhand Slide & Funnel", details: "14 reps", desc: "Cross-body footwork into deep backhand sweep. Funnel ball back to middle before throwing." }
+                ]},
+                day3: { game: "Timing", gameTitle: "⚾ Home Run Derby Timing Warmup", drills: [
+                    { cat: "isolation", name: "Rear Knee Drive Isolation", details: "12 reps", desc: "Drive rear knee down toward front instep without leaning back, keeping head over center of gravity." },
+                    { cat: "hitting", name: "Outside Edge Driving", details: "16 swings", desc: "Set tee low and outside. Drive ball cleanly over opposite field shortstop/second base area." },
+                    { cat: "fielding", name: "High-Hop Wall Rebounds", details: "16 reps", desc: "Throw ball hard against wall to create high bouncing rebound. Field at apex before downward drop." },
+                    { cat: "fielding", name: "Communicated Pop-Up Calls", details: "10 reps", desc: "Shout clear 'Mine! Mine!' calls while tracking fly balls in wind/outdoor conditions." }
+                ]}
+            },
+            4: { phaseTitle: "Phase 1: Mechanical Precision & Soft Hands", focus: "Mastering Phase 1 milestones: full-speed reps with clean technique.",
+                day1: { game: "Reaction", gameTitle: "⚡ Strike Zone Reaction Warmup", drills: [
+                    { cat: "isolation", name: "Lead Arm Extension Isolation", details: "12 reps", desc: "Drive knob toward pitcher, extending lead elbow fully through impact zone." },
+                    { cat: "hitting", name: "Comprehensive Tee Calibration", details: "18 swings", desc: "6 swings inside pitch, 6 middle, 6 outside. Focus on identical load timing across all zones." },
+                    { cat: "hitting", name: "Load-and-Hold Power Swings", details: "12 swings", desc: "Hold full stride load position for 3 seconds before swinging with maximum rotational intent." },
+                    { cat: "fielding", name: "3-Way Short Hop Gauntlet", details: "24 reps", desc: "8 short hops center, 8 forehand, 8 backhand in continuous rapid sequence." }
+                ]},
+                day2: { game: "Fielding", gameTitle: "🧤 Ground Ball Glove Catcher Warmup", drills: [
+                    { cat: "isolation", name: "Crossover Step First Step Burst", details: "10 reps", desc: "Practice explosive first crossover step right and left to simulate rapid grounder push-off." },
+                    { cat: "hitting", name: "Live Angle Soft Toss", details: "20 swings", desc: "Soft toss coming behind L-screen at game velocity. Focus on hard line drive contact." },
+                    { cat: "fielding", name: "Slow Roller & Do-or-Die Picks", details: "16 reps", desc: "Alternate barehand picks on slow grounders with glove charges on medium rollers." },
+                    { cat: "fielding", name: "Double Play Feeds (Flip & Chest)", details: "14 reps", desc: "7 underhand flips and 7 firm chest passes to middle infielder covering second base." }
+                ]},
+                day3: { game: "Timing", gameTitle: "⚾ Home Run Derby Timing Warmup", drills: [
+                    { cat: "isolation", name: "Full Swivel Wrist Snap Drills", details: "15 reps", desc: "Isolate top-hand wrist snap at contact point to prevent barrel drag." },
+                    { cat: "hitting", name: "Game Simulation Swings", details: "18 swings", desc: "Simulate game counts (0-0, 2-0 hitter count, 3-2 full count) adjusting swing aggression." },
+                    { cat: "fielding", name: "Pop-Up Fence / Boundary Drill", details: "12 reps", desc: "Drift backward toward boundary/wall, feel position with back hand, and make overhead catch." },
+                    { cat: "fielding", name: "Full Fielding Routine Assessment", details: "15 clean reps", desc: "Complete 15 consecutive error-free grounder fields to finalize Phase 1 certification." }
+                ]}
+            },
+            5: { phaseTitle: "Phase 2: Dynamic Footwork & Barrel Control", focus: "Weight shift mechanics, driving off-speed pitches, and crossover speed.",
+                day1: { game: "Reaction", gameTitle: "⚡ Strike Zone Reaction Warmup", drills: [
+                    { cat: "isolation", name: "Rear Hip Hinge & Loading Holds", details: "3 sets × 8 reps", desc: "Hinge at waist into rear hip socket. Hold load position for 2 seconds feeling glute activation." },
+                    { cat: "hitting", name: "Rocking Chair Weight-Shift Tee Swings", details: "16 swings", desc: "Rhythmically rock weight front-to-back twice before exploding forward into tee swing." },
+                    { cat: "hitting", name: "Inside Edge Choke-and-Turn", details: "12 swings", desc: "Choke up 1 inch. Clear hands tightly inside high-and-inside pitch location." },
+                    { cat: "fielding", name: "Crossover Step Directional Sprints", details: "12 reps", desc: "Execute deep crossover step into a 10-foot sprint, breaking down into low fielding posture." }
+                ]},
+                day2: { game: "Fielding", gameTitle: "🧤 Ground Ball Glove Catcher Warmup", drills: [
+                    { cat: "isolation", name: "Forehand Wrist Extension Isolation", details: "15 reps", desc: "Isolate lead wrist position on extended forehand reaches, keeping palm open to ball." },
+                    { cat: "hitting", name: "Changeup Front Toss (Wait & Drive)", details: "16 swings", desc: "Front toss with variable speed. Delay stride completion on slow toss to maintain power behind ball." },
+                    { cat: "fielding", name: "Hard Angle Forehand Glove Sweeps", details: "14 reps", desc: "Reach at full lateral extension on forehand grounders, sweeping ball smoothly into body." },
+                    { cat: "fielding", name: "Short Hop Pick-and-Throw Shuffle", details: "12 reps", desc: "Field short hop grounder and immediately execute 2-shuffle footwork toward target base." }
+                ]},
+                day3: { game: "Timing", gameTitle: "⚾ Home Run Derby Timing Warmup", drills: [
+                    { cat: "isolation", name: "Rotational Core Torso Swivels", details: "20 reps", desc: "Hold PVC pipe across chest and rotate torso rapidly right and left while keeping hips still." },
+                    { cat: "hitting", name: "Low Pitch Knee-Drop Drives", details: "14 swings", desc: "Drop rear knee toward ground while keeping spine upright to drive low strike location." },
+                    { cat: "fielding", name: "Backhand Hole Crossover Picks", details: "14 reps", desc: "Cross over deep into 5-6 hole, fielding backhand grounders on outer foot." },
+                    { cat: "fielding", name: "Flyball Drop Step & Drift", details: "10 reps", desc: "Perform 45-degree drop step into full-speed drift over shoulder to catch fly ball." }
+                ]}
+            },
+            6: { phaseTitle: "Phase 2: Dynamic Footwork & Barrel Control", focus: "Opposite field gap power, short-hop backhand isolation, and throwing footwork.",
+                day1: { game: "Reaction", gameTitle: "⚡ Strike Zone Reaction Warmup", drills: [
+                    { cat: "isolation", name: "Bottom-Hand Knob-Drive Isolation", details: "2 sets × 10 reps", desc: "Pull bottom hand knob straight toward inner seam of baseball before launching barrel." },
+                    { cat: "hitting", name: "Oppo-Gap Driving Tee Progression", details: "18 swings", desc: "Set tee outside. Drive ball into opposite field gap with high line-drive trajectory." },
+                    { cat: "hitting", name: "High Exit Velo Tee Swings", details: "12 swings", desc: "Focus on 100% effort exit velocity swings up the middle." },
+                    { cat: "fielding", name: "Short Hop Backhand Glove Isolation", details: "18 reps", desc: "Field short hops on backhand side exclusively using glove pocket presentation." }
+                ]},
+                day2: { game: "Fielding", gameTitle: "🧤 Ground Ball Glove Catcher Warmup", drills: [
+                    { cat: "isolation", name: "Quick Exchange Grip Isolation", details: "20 reps", desc: "Practice spinning baseball inside glove to instantly locate four-seam grip." },
+                    { cat: "hitting", name: "Curved Soft Toss Driving", details: "16 swings", desc: "Soft toss thrown with lateral spin; stay inside ball path to hit line drives." },
+                    { cat: "fielding", name: "Slow Roller Do-or-Die Barehands", details: "14 reps", desc: "Sprint hard at slow roller, scoop inside left foot with bare hand, and throw on run." },
+                    { cat: "fielding", name: "Infield Pop-Up Sun/Wind Tracking", details: "10 reps", desc: "Track high pop-ups in open sunlight, positioning body slightly downwind of ball." }
+                ]},
+                day3: { game: "Timing", gameTitle: "⚾ Home Run Derby Timing Warmup", drills: [
+                    { cat: "isolation", name: "Lead Knee Stride-and-Block Holds", details: "12 reps", desc: "Stride forward and lock lead leg firm at contact point to transfer momentum upward." },
+                    { cat: "hitting", name: "Situational 2-Strike Choke Swings", details: "16 swings", desc: "Choke up 1 inch, widen stance, and cut down stride to protect strike zone." },
+                    { cat: "fielding", name: "Crow-Hop Throwing Footwork", details: "12 reps", desc: "Field grounder, execute seamless rear-leg crow-hop to generate maximum throwing velocity." },
+                    { cat: "fielding", name: "Boundary Communication Drills", details: "10 reps", desc: "Call off adjacent fielders when approaching dugout or foul territory fences." }
+                ]}
+            },
+            7: { phaseTitle: "Phase 2: Dynamic Footwork & Barrel Control", focus: "Uncoiling hips, charging slow rollers, and fast double play turn mechanics.",
+                day1: { game: "Reaction", gameTitle: "⚡ Strike Zone Reaction Warmup", drills: [
+                    { cat: "isolation", name: "Rear Hip Uncoil Isolation", details: "3 sets × 8 reps", desc: "Pause at coiled load position, then snap rear hip forward uncoiling lower body instantly." },
+                    { cat: "hitting", name: "Step-Through Power Tee Work", details: "16 swings", desc: "Swing at tee and let back foot step completely through finish toward pitcher." },
+                    { cat: "hitting", name: "Outside Edge Reach & Drive", details: "12 swings", desc: "Maintain barrel control on outer pitch edge without lunging upper body forward." },
+                    { cat: "fielding", name: "Barehand Charge & Scoop Drills", details: "16 reps", desc: "Charge slow rollers, scooping cleanly with bare right hand in continuous motion." }
+                ]},
+                day2: { game: "Fielding", gameTitle: "🧤 Ground Ball Glove Catcher Warmup", drills: [
+                    { cat: "isolation", name: "Underhand Flip Isolation", details: "18 reps", desc: "Practice underhand double play flips with stiff wrist and fingers pointed up." },
+                    { cat: "hitting", name: "High Velo Front Toss (Short Distance)", details: "18 swings", desc: "Front toss from 15 feet away to simulate high-speed reaction requirements." },
+                    { cat: "fielding", name: "2nd Base Double Play Feeds", details: "14 reps", desc: "Field grounders at second base position and execute firm feeds to second base bag." },
+                    { cat: "fielding", name: "Deep Hole Backhand Plant-and-Throw", details: "12 reps", desc: "Field deep 5-6 hole grounder, plant right foot hard into ground, and fire across diamond." }
+                ]},
+                day3: { game: "Timing", gameTitle: "⚾ Home Run Derby Timing Warmup", drills: [
+                    { cat: "isolation", name: "Top-Hand Punch Isolation", details: "2 sets × 10 reps", desc: "Punch top hand directly toward ball without dropping barrel below hands." },
+                    { cat: "hitting", name: "Off-Speed Wait-and-Drive Swings", details: "14 swings", desc: "Wait for off-speed pitch to travel deep over plate before exploding through impact." },
+                    { cat: "fielding", name: "Z-Pattern Lateral Fielding Shuffles", details: "16 reps", desc: "Shuffle in zig-zag pattern forward and laterally before fielding ground ball." },
+                    { cat: "fielding", name: "High Sky Flyball Tracking", details: "10 reps", desc: "Track high fly balls directly over home plate area with proper glove elevation." }
+                ]}
+            },
+            8: { phaseTitle: "Phase 2: Dynamic Footwork & Barrel Control", focus: "Mastering Phase 2 milestones: agility, power drive, and fielding control.",
+                day1: { game: "Reaction", gameTitle: "⚡ Strike Zone Reaction Warmup", drills: [
+                    { cat: "isolation", name: "Full Kinetic Chain Swivels", details: "15 reps", desc: "Perform slow motion kinetic chain sequence check: feet -> hips -> torso -> hands." },
+                    { cat: "hitting", name: "All-Zone Tee Calibration", details: "18 swings", desc: "Hit pitches across 5 different tee zones (high, low, inside, outside, deep)." },
+                    { cat: "hitting", name: "Max Exit Velo Tee Challenge", details: "12 swings", desc: "Drive ball with maximum rotational exit velocity." },
+                    { cat: "fielding", name: "4-Corner Short Hop Gauntlet", details: "20 reps", desc: "Field short hops in sequence: forehand, backhand, center, and charging slow roller." }
+                ]},
+                day2: { game: "Fielding", gameTitle: "🧤 Ground Ball Glove Catcher Warmup", drills: [
+                    { cat: "isolation", name: "Pivot & Throw Footwork Holds", details: "12 reps", desc: "Field grounder, plant, pivot feet to target, and hold throwing freeze stance for 2 seconds." },
+                    { cat: "hitting", name: "Live Mixed Angle Front Toss", details: "20 swings", desc: "Receive front toss from randomized release points and angles." },
+                    { cat: "fielding", name: "Infield Slow Roller & Do-or-Die Test", details: "16 reps", desc: "Execute 100% full-speed barehand charges on slow rolling balls." },
+                    { cat: "fielding", name: "Middle Infield Double Play Turns", details: "14 reps", desc: "Practice footwork over second base bag receiving double play feed and turning throw." }
+                ]},
+                day3: { game: "Timing", gameTitle: "⚾ Home Run Derby Timing Warmup", drills: [
+                    { cat: "isolation", name: "Wrist Cock & Release Isolation", details: "15 reps", desc: "Practice flexing wrists into launch position and snapping forcefully through contact." },
+                    { cat: "hitting", name: "Full Game Situation Swings", details: "18 swings", desc: "Execute situational swings: runner on 3rd less than 2 outs, bases loaded." },
+                    { cat: "fielding", name: "Wall / Boundary Pop-Up Catches", details: "12 reps", desc: "Drift to boundary wall, make catch while protecting body against fence." },
+                    { cat: "fielding", name: "Phase 2 Comprehensive Assessment", details: "15 clean reps", desc: "Complete 15 error-free reps across fielding and hitting to pass Phase 2." }
+                ]}
+            },
+            9: { phaseTitle: "Phase 3: High-Velocity Reaction & Game Readiness", focus: "High-velocity reaction, 2-strike adjustments, and game-speed double plays.",
+                day1: { game: "Reaction", gameTitle: "⚡ Strike Zone Reaction Warmup", drills: [
+                    { cat: "isolation", name: "High-Velo Grip & Forearm Isolation", details: "2 sets × 12 reps", desc: "Isolate forearm wrist snap against resistance band to prepare for high pitch speeds." },
+                    { cat: "hitting", name: "High-Velocity Short-Distance Tee", details: "18 swings", desc: "Place tee close to net and execute rapid hip turn to hit high speed pitch setup." },
+                    { cat: "hitting", name: "Inside Pitch Jam-Proof Swings", details: "12 swings", desc: "Clear hands inside tight pitch location to hit clean barrel line drives." },
+                    { cat: "fielding", name: "High Velo Short Hop Reactions", details: "20 reps", desc: "Throw ball hard against wall from 8ft distance, reacting instantly to short hops." }
+                ]},
+                day2: { game: "Fielding", gameTitle: "🧤 Ground Ball Glove Catcher Warmup", drills: [
+                    { cat: "isolation", name: "Backhand Extension Reach Holds", details: "12 reps", desc: "Hold deep backhand fielding stance freeze to build lateral ankle and hip strength." },
+                    { cat: "hitting", name: "Rapid-Fire 2-Strike Protection Toss", details: "18 swings", desc: "Protect plate against rapid soft toss, spoiling close pitches foul or driving line drives." },
+                    { cat: "fielding", name: "Deep 5-6 Hole Backhand Rips", details: "14 reps", desc: "Range deep into 5-6 hole, field backhand, and fire firm throw across infield." },
+                    { cat: "fielding", name: "Sub-1 Second Transfer Gauntlet", details: "15 reps", desc: "Transfer ball from glove to throwing release in under 1 second." }
+                ]},
+                day3: { game: "Timing", gameTitle: "⚾ Home Run Derby Timing Warmup", drills: [
+                    { cat: "isolation", name: "Thoracic Spine Explosive Rotations", details: "20 reps", desc: "Explosively rotate upper torso while keeping lower body firmly planted." },
+                    { cat: "hitting", name: "Off-Speed to Fastball Adjustment Swings", details: "16 swings", desc: "Adjust swing mid-stride from off-speed timing back to high fastball timing." },
+                    { cat: "fielding", name: "Over-the-Shoulder Flyball Drift", details: "12 reps", desc: "Sprint back at full speed tracking deep fly ball over shoulder." },
+                    { cat: "fielding", name: "Cutoff & Relay Footwork Turns", details: "12 reps", desc: "Receive outfield relay throw, pivot turn on glove side, and fire to target base." }
+                ]}
+            },
+            10: { phaseTitle: "Phase 3: High-Velocity Reaction & Game Readiness", focus: "Opposite field situational driving, diving stops, and rapid relay throws.",
+                day1: { game: "Reaction", gameTitle: "⚡ Strike Zone Reaction Warmup", drills: [
+                    { cat: "isolation", name: "Lead Arm Pull-Through Isolation", details: "2 sets × 10 reps", desc: "Isolate lead arm pulling knob inside ball flight path before extension." },
+                    { cat: "hitting", name: "Deep Opposite Field Drive Tee Work", details: "18 swings", desc: "Let outside pitch travel deep over plate and drive to opposite field wall." },
+                    { cat: "hitting", name: "Rise/Sink Pitch Discipline", details: "12 swings", desc: "Recognize high vs low pitch trajectories and adjust bat angle accordingly." },
+                    { cat: "fielding", name: "Diving / Knockdown Short Hops", details: "16 reps", desc: "Leave feet laterally to knock down hard grounders, recovering quickly to make throw." }
+                ]},
+                day2: { game: "Fielding", gameTitle: "🧤 Ground Ball Glove Catcher Warmup", drills: [
+                    { cat: "isolation", name: "Chest-Feed Transfer Isolation", details: "18 reps", desc: "Absorb ground ball to chest center and locate four-seam grip instantly." },
+                    { cat: "hitting", name: "Mixed Pitch Live Front Toss", details: "20 swings", desc: "React to live front toss with randomized pitch speeds and locations." },
+                    { cat: "fielding", name: "Charging Slow Rollers (Barehand vs Glove)", details: "14 reps", desc: "Read slow roller speed mid-sprint to choose barehand scoop or glove pick." },
+                    { cat: "fielding", name: "Relay Throw Turn-and-Fire", details: "12 reps", desc: "Catch relay throw with momentum moving toward target base, making rapid throw." }
+                ]},
+                day3: { game: "Timing", gameTitle: "⚾ Home Run Derby Timing Warmup", drills: [
+                    { cat: "isolation", name: "Rear Knee Pinch Drive Isolation", details: "15 reps", desc: "Pinch rear knee inward toward pitcher to trigger explosive lower body launch." },
+                    { cat: "hitting", name: "Sacrifice Fly / Hit-and-Run Swings", details: "16 swings", desc: "Execute situational demands: high fly ball to outfield or ground ball to right side." },
+                    { cat: "fielding", name: "High Sky Pop-Up Sun Adjustments", details: "10 reps", desc: "Field high pop-ups while using glove hand to shade eyes from sun." },
+                    { cat: "fielding", name: "Infield Command & Communication", details: "12 reps", desc: "Direct teammates verbally on base coverage and cutoff alignment during live play." }
+                ]}
+            },
+            11: { phaseTitle: "Phase 3: High-Velocity Reaction & Game Readiness", focus: "Clutch situational hitting, backhand picks under pressure, and elite exchange.",
+                day1: { game: "Reaction", gameTitle: "⚡ Strike Zone Reaction Warmup", drills: [
+                    { cat: "isolation", name: "Single-Hand Barrel Speed Isolation", details: "2 sets × 8 reps", desc: "Alternate single-hand dry swings (top hand then bottom hand) focusing on barrel acceleration." },
+                    { cat: "hitting", name: "Velocity Front Toss (20ft Distance)", details: "20 swings", desc: "Take front toss from 20 feet simulating 90+ mph reaction window." },
+                    { cat: "hitting", name: "Late Breaking Pitch Adjustments", details: "12 swings", desc: "Keep weight back on breaking pitch before driving through contact." },
+                    { cat: "fielding", name: "Rapid Lateral Short Hop Gauntlet", details: "24 reps", desc: "12 rapid forehands and 12 backhands at maximum tempo." }
+                ]},
+                day2: { game: "Fielding", gameTitle: "🧤 Ground Ball Glove Catcher Warmup", drills: [
+                    { cat: "isolation", name: "Sidearm / 3-Quarter Throwing Arm Angles", details: "15 reps", desc: "Practice quick sidearm and 3-quarter throwing releases on slow roller pick-ups." },
+                    { cat: "hitting", name: "Full-Count Game Pressure Swings", details: "18 swings", desc: "3-2 count situational simulation: foul off tough pitches, drive mistakes." },
+                    { cat: "fielding", name: "Backhand Hole Pick & Jump-Throw", details: "12 reps", desc: "Field deep backhand grounder in 5-6 hole, jumping to align shoulders and throw to 1st." },
+                    { cat: "fielding", name: "Turning Double Plays from 2B & SS", details: "14 reps", desc: "Execute double play turns from both shortstop and second base positions." }
+                ]},
+                day3: { game: "Timing", gameTitle: "⚾ Home Run Derby Timing Warmup", drills: [
+                    { cat: "isolation", name: "Hip-to-Hand Connection Isolation", details: "15 reps", desc: "Ensure zero drag between hip rotation and bat launch." },
+                    { cat: "hitting", name: "Walk-Off Situational Swings", details: "16 swings", desc: "Simulate walk-off game scenarios: drive ball deep to outfield to bring runner home." },
+                    { cat: "fielding", name: "Fence Drift & Diving Flyball Picks", details: "10 reps", desc: "Full-speed sprint tracking deep fly balls near outfield wall." },
+                    { cat: "fielding", name: "Game Speed Relay Command", details: "12 reps", desc: "Execute full relay plays with loud verbal direction to cutoff man." }
+                ]}
+            },
+            12: { phaseTitle: "Phase 3: High-Velocity Reaction & Game Readiness", focus: "Final Season Assessment: Flawless mechanical execution and game speed.",
+                day1: { game: "Reaction", gameTitle: "⚡ Strike Zone Reaction Warmup", drills: [
+                    { cat: "isolation", name: "Kinetic Chain Master Calibration", details: "15 reps", desc: "Perform full kinetic chain scan to ensure stance, load, turn, and finish are perfectly aligned." },
+                    { cat: "hitting", name: "Pro Level Tee Spray Chart Work", details: "20 swings", desc: "5 swings pull, 5 middle, 5 oppo, 5 power cuts across strike zone." },
+                    { cat: "hitting", name: "High-Velo Reaction Swings", details: "15 swings", desc: "Execute maximum barrel speed swings under game simulation." },
+                    { cat: "fielding", name: "Short Hop Master Gauntlet", details: "24 reps", desc: "24 short hops with zero fielding errors." }
+                ]},
+                day2: { game: "Fielding", gameTitle: "🧤 Ground Ball Glove Catcher Warmup", drills: [
+                    { cat: "isolation", name: "Pro Transfer & Grip Isolation", details: "20 reps", desc: "Achieve under 0.7 second transfer time from glove pocket to throwing grip." },
+                    { cat: "hitting", name: "Full Count Pitch Selection Toss", details: "20 swings", desc: "Demonstrate pitch recognition: take balls outside strike zone, drive strike pitches." },
+                    { cat: "fielding", name: "Infield Slow Roller Master Test", details: "16 reps", desc: "Execute flawless barehand and glove charges on slow rollers." },
+                    { cat: "fielding", name: "Double Play Feeds & Turns Master Test", details: "14 reps", desc: "Flawless middle infield double play footwork and feeds." }
+                ]},
+                day3: { game: "Timing", gameTitle: "⚾ Home Run Derby Timing Warmup", drills: [
+                    { cat: "isolation", name: "Power Launch Position Holds", details: "15 reps", desc: "Final stance and launch position check for 100% mechanical balance." },
+                    { cat: "hitting", name: "Championship Game Swings", details: "20 swings", desc: "Complete hitter execution across all situational counts." },
+                    { cat: "fielding", name: "Outfield Flyball & Pop-Up Master Test", details: "12 reps", desc: "Flawless fly ball tracking, communication, and fence navigation." },
+                    { cat: "fielding", name: "12-Week Preseason Mastery Certification", details: "Complete all checks", desc: "Successfully pass all 12-week preseason milestones to earn Gretna Thunder certification!" }
+                ]}
+            }
         };
 
         function initApp() {
@@ -260,17 +510,14 @@
             }
         }
 
-        /* FIXED TAB SWITCHING FUNCTION */
         function switchWeek(weekNum) {
             currentWeek = weekNum;
 
-            // 1. Update button styling
             const buttons = document.querySelectorAll('.week-tab-btn');
             buttons.forEach((btn, idx) => {
                 btn.classList.toggle('active', (idx + 1) === weekNum);
             });
 
-            // 2. Hide all week panels and show strictly the selected week panel
             const panels = document.querySelectorAll('.week-panel');
             panels.forEach(panel => {
                 panel.classList.remove('active');
@@ -281,10 +528,12 @@
                 activePanel.classList.add('active');
             }
 
-            // 3. Update header indicator
+            const resetLabel = document.getElementById('resetWeekNumLabel');
+            if (resetLabel) resetLabel.innerText = weekNum;
+
             const phaseLabel = document.getElementById('current-phase-label');
-            if (phaseLabel) {
-                phaseLabel.innerText = PHASE_TITLES[weekNum] || "Phase 1";
+            if (phaseLabel && FULL_12_WEEK_PROGRAM[weekNum]) {
+                phaseLabel.innerText = FULL_12_WEEK_PROGRAM[weekNum].phaseTitle;
             }
         }
 
@@ -294,14 +543,15 @@
             container.innerHTML = '';
 
             for (let w = 1; w <= 12; w++) {
+                const weekData = FULL_12_WEEK_PROGRAM[w];
                 const weekPanel = document.createElement('div');
                 weekPanel.id = `week-panel-${w}`;
                 weekPanel.className = `week-panel ${w === 1 ? 'active' : ''}`;
 
-                let html = `<div class="week-description"><strong>Week ${w} Focus: ${PHASE_TITLES[w]}</strong></div>`;
+                let html = `<div class="week-description"><strong>Week ${w} Focus: ${weekData.phaseTitle}</strong><br>${weekData.focus}</div>`;
 
                 [1, 2, 3].forEach(dayNum => {
-                    const dayObj = BASE_DRILL_TEMPLATE[`day${dayNum}`];
+                    const dayObj = weekData[`day${dayNum}`];
                     
                     html += `
                         <div class="day-card" id="card-w${w}-d${dayNum}">
@@ -313,11 +563,16 @@
                             <div class="arcade-section" id="arcade-sec-w${w}-d${dayNum}">
                                 <div class="arcade-info">
                                     <h3 id="game-title-text-w${w}-d${dayNum}">${dayObj.gameTitle}</h3>
-                                    <p id="game-desc-text-w${w}-d${dayNum}">Complete this 30s warmup game to unlock today's workout!</p>
+                                    <p id="game-desc-text-w${w}-d${dayNum}">Complete this 30s warmup game or skip to unlock today's workout!</p>
                                 </div>
-                                <button class="play-game-btn" id="game-btn-w${w}-d${dayNum}" onclick="launchGame('${dayObj.game}', '${dayObj.gameTitle}', ${w}, ${dayNum})">
-                                    🎮 PLAY WARMUP (30S)
-                                </button>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <button class="play-game-btn" id="game-btn-w${w}-d${dayNum}" onclick="launchGame('${dayObj.game}', '${dayObj.gameTitle}', ${w}, ${dayNum})">
+                                        🎮 PLAY WARMUP (30S)
+                                    </button>
+                                    <button class="skip-game-btn" id="skip-btn-w${w}-d${dayNum}" onclick="skipGame(${w}, ${dayNum})">
+                                        ⏩ SKIP
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="workout-lock-overlay" id="lock-overlay-w${w}-d${dayNum}">
@@ -330,8 +585,8 @@
                                     <thead>
                                         <tr>
                                             <th>Type</th>
-                                            <th>Drill</th>
-                                            <th>Target Reps / Focus</th>
+                                            <th>Drill Name</th>
+                                            <th>Target Reps & Execution Description</th>
                                             <th style="text-align: center;">Done</th>
                                         </tr>
                                     </thead>
@@ -344,7 +599,10 @@
                             <tr>
                                 <td><span class="tag tag-${drill.cat}">${drill.cat}</span></td>
                                 <td><strong>${drill.name}</strong></td>
-                                <td>${drill.details}</td>
+                                <td>
+                                    <strong>${drill.details}</strong>
+                                    <div class="drill-desc">${drill.desc}</div>
+                                </td>
                                 <td class="check-cell" id="cell_${drillId}">
                                     <input type="checkbox" class="custom-checkbox" id="cb_${drillId}" onchange="toggleDrillCloud('${drillId}', this.checked)">
                                 </td>
@@ -388,6 +646,7 @@
                     const gameDone = games[`w${w}_d${d}`] === true;
                     
                     const btn = document.getElementById(`game-btn-w${w}-d${d}`);
+                    const skipBtn = document.getElementById(`skip-btn-w${w}-d${d}`);
                     const arcadeSec = document.getElementById(`arcade-sec-w${w}-d${d}`);
                     const lockOverlay = document.getElementById(`lock-overlay-w${w}-d${d}`);
                     const workoutContainer = document.getElementById(`workout-container-w${w}-d${d}`);
@@ -395,12 +654,14 @@
                     if (btn && gameDone) {
                         btn.disabled = true;
                         btn.innerText = '🔒 COMPLETED';
+                        if (skipBtn) skipBtn.style.display = 'none';
                         if (arcadeSec) arcadeSec.classList.add('disabled-game');
                         if (lockOverlay) lockOverlay.style.display = 'none';
                         if (workoutContainer) workoutContainer.classList.add('unlocked');
                     } else if (btn) {
                         btn.disabled = false;
                         btn.innerText = '🎮 PLAY WARMUP (30S)';
+                        if (skipBtn) skipBtn.style.display = 'inline-block';
                         if (arcadeSec) arcadeSec.classList.remove('disabled-game');
                         if (lockOverlay) lockOverlay.style.display = 'block';
                         if (workoutContainer) workoutContainer.classList.remove('unlocked');
@@ -416,6 +677,23 @@
                         }
                     }
                 }
+            }
+        }
+
+        function resetCurrentWeekProgress() {
+            if (confirm(`Reset all drill checkmarks and game completions for ${currentPlayer} on Week ${currentWeek}?`)) {
+                [1, 2, 3].forEach(d => {
+                    database.ref(`players/${currentPlayer}/games/w${currentWeek}_d${d}`).remove();
+                    for (let dr = 1; dr <= 5; dr++) {
+                        database.ref(`players/${currentPlayer}/drills/w${currentWeek}_d${d}_dr${dr}`).remove();
+                    }
+                });
+            }
+        }
+
+        function resetFullPlayerProgress() {
+            if (confirm(`🚨 WARNING: Are you sure you want to COMPLETELY RESET ALL 12 WEEKS of training data for ${currentPlayer}?`)) {
+                database.ref(`players/${currentPlayer}`).remove();
             }
         }
 
@@ -458,7 +736,18 @@
             });
         }
 
-        /* ARCADE GAME FUNCTIONS */
+        function skipGame(weekNum, dayNum) {
+            if (confirm("Skip today's 30-second warmup and unlock the workout?")) {
+                database.ref(`players/${currentPlayer}/games/w${weekNum}_d${dayNum}`).set(true);
+            }
+        }
+
+        function skipCurrentModalGame() {
+            const { week, day } = activeGameContext;
+            database.ref(`players/${currentPlayer}/games/w${week}_d${day}`).set(true);
+            closeGameModal();
+        }
+
         function launchGame(gameType, title, weekNum, dayNum) {
             activeGameContext = { week: weekNum, day: dayNum };
             document.getElementById('modalGameTitle').innerText = title;
